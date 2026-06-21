@@ -1,0 +1,31 @@
+name: Job Monitor
+on:
+  schedule:
+    - cron: '0 9 * * *'  # 06:00 BRT (UTC-3)
+    - cron: '0 21 * * *' # 18:00 BRT (UTC-3)
+  workflow_dispatch:    # Allows manual trigger
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Run monitor script
+        run: python monitor.py
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      - name: Commit and push updated JSON
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add known_jobs.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update known jobs list" && git push)
